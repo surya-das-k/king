@@ -1,0 +1,49 @@
+pipeline {
+    agent any
+    
+    environment {
+        // Using 'sdk123' since it successfully masked your username in the logs (****)
+        DOCKER = credentials('sdk123') 
+        CONTAINER = "tox-continental"
+        TAG = "latest"
+        ADD_PATH = "/home/surya/king"
+    }
+    
+    stages {
+        stage('Build_docker_image') {
+            steps {
+                // Moving the image name construction here fixes the security warning!
+                sh '''
+                docker build -t ${DOCKER_USR}/${CONTAINER}:${TAG} -f ${ADD_PATH}/Dockerfile ${ADD_PATH}
+                '''
+            }
+        }
+        
+        stage('docker_login') {
+            steps {
+                sh '''
+                echo $DOCKER_PSW | docker login -u $DOCKER_USR --password-stdin
+                '''
+            }
+        }
+        
+        stage('docker_image_push') {
+            steps {
+                sh '''
+                docker push ${DOCKER_USR}/ooo:${TAG}
+                '''
+            }
+        }
+        
+        stage('docker_container_create') {
+            steps {
+                sh '''
+                docker container stop ${CONTAINER} || true
+                docker container rm ${CONTAINER} || true
+                
+                docker run -d --name ${CONTAINER} -p 6667:8080 ${DOCKER_USR}/ooo:${TAG}
+                '''
+            }
+        }
+    }
+}
