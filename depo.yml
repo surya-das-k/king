@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: con-6
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: con-6
+  template:
+    metadata:
+      labels:
+        app: con-6
+    spec:
+      containers:
+      - name: con-6
+        image: suryadask/con-6:latest
+        ports:
+        - containerPort: 80
