@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+    
+    environment {
+        // Using 'sdk123' since it successfully masked your username in the logs (****)
+        DOCKER = credentials('sdk123') 
+        TAG = "latest"
+        CONTAINER = "con-6"
+        //ADD_PATH = 
+    }
+    
+    stages {
+        stage('Clone_repo'){
+            steps{
+                git url: 'https://github.com/surya-das-k/king.git/', branch: "main"
+            }
+        }
+        stage('Build_docker_image') {
+            steps {
+                // Moving the image name construction here fixes the security warning!
+                sh '''
+                docker build -t ${DOCKER_USR}/${CONTAINER}:${TAG} -f Dockerfile .
+                '''
+            }
+        }
+        
+        stage('docker_login') {
+            steps {
+                sh '''
+                echo $DOCKER_PSW | docker login -u $DOCKER_USR --password-stdin
+                '''
+            }
+        }
+        
+        stage('docker_image_push') {
+            steps {
+                sh '''
+                docker push ${DOCKER_USR}/${CONTAINER}:${TAG}
+                '''
+            }
+        }
+        stage('Create Deployment') {
+    steps {
+        sh '''
+        kubectl apply -f depo.yml
+        '''
+    }
+}
+    }
+}
